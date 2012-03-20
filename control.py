@@ -39,10 +39,10 @@ class CoalitionControl(object):
         conn.close()
         return data
 
-    def list(self):
-        params = urllib.urlencode({'id':self.default_options['parent']})
+    def get_jobs(self, parent=0):
+        params = urllib.urlencode({'id': parent, 'parent': parent})
         conn = httplib.HTTPConnection(self.server_url)
-        conn.request("GET", "/json/getjobs?"+params)
+        conn.request("GET", "/json/getjobs?" + params)
         response = conn.getresponse()
         data = response.read()
         conn.close()
@@ -50,9 +50,14 @@ class CoalitionControl(object):
         data = re.sub(r',null', r',None', data)
 
         data = eval(data)
+
         vars = data["Vars"]
         jobs = data["Jobs"]
         parents = data["Parents"]
+        return parents, [dict(zip(vars, j)) for j in jobs]
+
+    def list(self, parent=0):
+        parents, jobs = self.get_jobs(parent)
         
         parents_info=''
         for i in range(len(parents)):
@@ -96,7 +101,10 @@ Control the Coalition server located at SERVER_URL.""",
     parser.add_argument('-T', '--timeout',
             help='timeout for the job')
     parser.add_argument('-D', '--dependencies',
-            help='IDs of the dependent jobs (exemple : "21 22 23")')
+            help='IDs of the dependent jobs (example : "21 22 23")')
+    parser.add_argument('-P', '--parent',
+            type=int,
+            help='Id of of the parent of the job (default: %(default)s)')
     parser.add_argument('--globalprogress', help='The job progression pattern')
     parser.add_argument('--localprogress',
             help='The second job progression pattern')
@@ -128,10 +136,9 @@ Control the Coalition server located at SERVER_URL.""",
 if __name__ == '__main__':
     args = _parse_args(sys.argv[1:])
     control = CoalitionControl(args.server_url)
-    print args
 
     if args.action == 'list':
-        control.list()
+        control.list(args.parent)
     elif args.action == 'remove':
         control.remove(args.id)
     elif args.action == 'add':

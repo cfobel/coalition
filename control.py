@@ -31,6 +31,10 @@ class CoalitionControl(object):
         options = deepcopy(self.default_options)
         options.update(kwargs)
         options.update({'cmd': command})
+        for attr in ['localprogress', 'globalprogress']:
+            if options.get(attr, True) is None:
+                # global/localprogress was specified as None, so delete it
+                del options[attr]
         params = urllib.urlencode(options)
         conn = httplib.HTTPConnection(self.server_url)
         conn.request('GET', '/json/addjob?' + params)
